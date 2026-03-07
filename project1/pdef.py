@@ -97,14 +97,37 @@ class ProblemDefinition(object):
         args: state: The query state of the system.
                      Type: dict, {"stateID": int, 
                                   "stateVec": numpy.ndarray of shape (self.dim_state,)}
-        returns: Ture or False.
+        returns: True or False.
         """
         ########## TODO ##########
+        # Task 2: Part 1
+        # Test with:        python main.py --task 2
+        # (a) bounds check
+        if not self.bounds_state.is_satisfied(state):
+            return False
+
+        # (b) robot-ground collision check
+        if self.panda_sim.is_collision(state):
+            return False
+
+        # (c) end-effector must stay inside the workspace
+        joint_values = state["stateVec"][0:sim.pandaNumDofs]
+        pos_ee_base, _ = self.panda_sim.jac_solver.forward_kinematics(joint_values)
+
+        # robot base is fixed at [-0.4, -0.2, 0] with zero orientation
+        x_ee_world = pos_ee_base[0] - 0.4
+        y_ee_world = pos_ee_base[1] - 0.2
+
+        if x_ee_world < -0.35 or x_ee_world > 0.35:
+            return False
+        if y_ee_world < -0.35 or y_ee_world > 0.35:
+            return False
+
         return True
-
-
         ##########################
-    
+
+
+
     def is_state_high_quality(self, J):
         """
         Check if a state is high-quality enough or not for the task.
@@ -113,10 +136,14 @@ class ProblemDefinition(object):
         returns: Ture or False
         """
         ########## TODO ##########
-        return True
-    
+        # Task 2: Part 1
+        # Test with:        python main.py --task 2
 
+        manipulability = np.sqrt(max(0.0, np.linalg.det(J @ J.T)))
+        return manipulability > 0.01
         ##########################
+
+
 
     def propagate(self, nstate, control):
         self.panda_sim.restore_state(nstate)
