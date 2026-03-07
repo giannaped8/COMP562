@@ -40,8 +40,39 @@ class JacSolver(object):
                             Type: numpy.ndarray of shape (6, 7)
         """
         ########## TODO ##########
+        # Task 1: Part 1
+        # Test with:        python main.py --task 1
         J = np.zeros(shape=(6, 7))
+        dq = 1e-3
 
-        
+        # baseline forward kinematics at the query joint configuration
+        pos0, quat0 = self.forward_kinematics(joint_values)
+        R0 = np.array(self.bullet_client.getMatrixFromQuaternion(quat0)).reshape(3, 3)
+
+        for i in range(7):
+            # perturb only joint i in the positive and negative directions
+            q_plus = joint_values.copy()
+            q_minus = joint_values.copy()
+            q_plus[i] += dq
+            q_minus[i] -= dq
+
+            # forward kinematics at the perturbed configurations
+            pos_p, quat_p = self.forward_kinematics(q_plus)
+            pos_m, quat_m = self.forward_kinematics(q_minus)
+
+            Rp = np.array(self.bullet_client.getMatrixFromQuaternion(quat_p)).reshape(3, 3)
+            Rm = np.array(self.bullet_client.getMatrixFromQuaternion(quat_m)).reshape(3, 3)
+
+            # linear part of the Jacobian column via central differences
+            J[0:3, i] = (pos_p - pos_m) / (2.0 * dq)
+
+            # angular part of the Jacobian column from the rotation derivative
+            Rdot = (Rp - Rm) / (2.0 * dq)
+            W = Rdot @ R0.T
+            W = 0.5 * (W - W.T)
+
+            # store the angular rows of this Jacobian column
+            J[3:6, i] = np.array([W[2, 1], W[0, 2], W[1, 0]])
         ##########################
+
         return J

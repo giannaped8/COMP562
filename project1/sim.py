@@ -192,10 +192,21 @@ class PandaSim(object):
     for i in range(n_steps):
 
       ########## TODO ##########
+      #Task 1: Part 2
+      # Test with:     python main.py --task 1
       J = np.zeros(shape=(6, 7)) # Jacobian matrix
       vq = np.zeros(shape=(7,)) # joint velocities
 
+      # get current joint angles
+      jpos, _, _ = self.get_joint_states()
+      q = np.array(jpos[0:pandaNumDofs])
 
+      # compute Jacobian
+      J = self.get_jacobian_matrix(q)
+
+      # compute joint velocities using pseudoinverse
+      J_pinv = np.linalg.pinv(J)
+      vq = J_pinv @ vx
       ##########################
 
       if not self.pdef.is_state_high_quality(J):
