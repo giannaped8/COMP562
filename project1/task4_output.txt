@@ -1,0 +1,302 @@
+python -u main.py --task 4 2>&1 | awk '!/Intel MKL WARNING/ && !/Intel oneAPI Math Kernel Library 2025.0/'
+
+Experiment:
+seed = [0, 1, 2, 3, 4, 5]
+num_iterations = [0, 150, 300]
+goal = [Relocation, Grasping]
+
+
+
+======================================================================
+Starting experiment: seed=0, iterations=0
+Solved: True
+Task: Relocation
+Seed: 0
+Optimization iterations: 0
+Runtime (s): 15.00960111618042
+Initial controls: 7
+Optimized controls: 7
+Initial cost: 8.22607578134251
+Optimized cost: 8.22607578134251
+Cost improvement (%): 0.0
+
+======================================================================
+Starting experiment: seed=0, iterations=100
+Solved: True
+Task: Relocation
+Seed: 0
+Optimization iterations: 100
+Runtime (s): 74.68978309631348
+Initial controls: 10
+Optimized controls: 8
+Initial cost: 7.939376285635063
+Optimized cost: 6.075003192830035
+Cost improvement (%): 23.482614071061107
+
+======================================================================
+Starting experiment: seed=0, iterations=300
+^C
+(comp562) giannas-mbp:project1 giannapedicini$ python -u main.py --task 4 2>&1 | awk '!/Intel MKL WARNING/ && !/Intel oneAPI Math Kernel Library 2025.0/'
+pybullet build time: Mar  7 2026 14:25:29
+argv[0]=
+Version = 4.1 Metal - 88
+Vendor = Apple
+Renderer = Apple M1 Pro
+b3Printf: Selected demo: Physics Server
+startThreads creating 1 threads.
+starting thread 0
+started thread 0
+MotionThreadFunc thread started
+argv[0]=
+
+======================================================================
+Starting experiment: seed=0, iterations=0
+Running time of planning + optimization: 16.603094 secs
+Solved: True
+Task: Relocation
+Seed: 0
+Optimization iterations: 0
+Runtime (s): 16.60309410095215
+Initial controls: 6
+Optimized controls: 6
+Initial cost: 5.7838943780786884
+Optimized cost: 5.7838943780786884
+Cost improvement (%): 0.0
+
+======================================================================
+Starting experiment: seed=0, iterations=100
+Running time of planning + optimization: 64.783577 secs
+Solved: True
+Task: Relocation
+Seed: 0
+Optimization iterations: 100
+Runtime (s): 64.78357696533203
+Initial controls: 7
+Optimized controls: 7
+Initial cost: 8.892152435957332
+Optimized cost: 8.203944385596909
+Cost improvement (%): 7.7394990168803846
+
+======================================================================
+Starting experiment: seed=0, iterations=300
+Running time of planning + optimization: 91.089769 secs
+Solved: True
+Task: Relocation
+Seed: 0
+Optimization iterations: 300
+Runtime (s): 91.08976888656616
+Initial controls: 5
+Optimized controls: 5
+Initial cost: 7.064662629193135
+Optimized cost: 5.637940947898176
+Cost improvement (%): 20.19518491087389
+
+======================================================================
+Starting experiment: seed=1, iterations=0
+Running time of planning + optimization: 22.688746 secs
+Solved: True
+Task: Relocation
+Seed: 1
+Optimization iterations: 0
+Runtime (s): 22.688745975494385
+Initial controls: 9
+Optimized controls: 9
+Initial cost: 9.090272052343884
+Optimized cost: 9.090272052343884
+Cost improvement (%): 0.0
+
+======================================================================
+Starting experiment: seed=1, iterations=100
+Running time of planning + optimization: 58.264748 secs
+Solved: True
+Task: Relocation
+Seed: 1
+Optimization iterations: 100
+Runtime (s): 58.264748096466064
+Initial controls: 4
+Optimized controls: 4
+Initial cost: 6.711030888578389
+Optimized cost: 6.63213380109981
+Cost improvement (%): 1.1756329063073576
+
+======================================================================
+Starting experiment: seed=1, iterations=300
+Running time of planning + optimization: 114.945040 secs
+Solved: True
+Task: Relocation
+Seed: 1
+Optimization iterations: 300
+Runtime (s): 114.94504022598267
+Initial controls: 6
+Optimized controls: 6
+Initial cost: 7.113017140169582
+Optimized cost: 5.434369403740199
+Cost improvement (%): 23.599658251201152
+
+======================================================================
+Starting experiment: seed=2, iterations=0
+Running time of planning + optimization: 13.543245 secs
+Solved: True
+Task: Relocation
+Seed: 2
+Optimization iterations: 0
+Runtime (s): 13.543245077133179
+Initial controls: 7
+Optimized controls: 7
+Initial cost: 7.853228755098372
+Optimized cost: 7.853228755098372
+Cost improvement (%): 0.0
+
+======================================================================
+Starting experiment: seed=2, iterations=100
+Running time of planning + optimization: 68.998221 secs
+Solved: True
+Task: Relocation
+Seed: 2
+Optimization iterations: 100
+Runtime (s): 68.99822115898132
+Initial controls: 8
+Optimized controls: 7
+Initial cost: 7.272913788493532
+Optimized cost: 6.456134843660903
+Cost improvement (%): 11.230422476956255
+
+======================================================================
+Starting experiment: seed=2, iterations=300
+Running time of planning + optimization: 96.510806 secs
+Solved: True
+Task: Relocation
+Seed: 2
+Optimization iterations: 300
+Runtime (s): 96.51080584526062
+Initial controls: 5
+Optimized controls: 5
+Initial cost: 6.690897896794658
+Optimized cost: 6.070032669963185
+Cost improvement (%): 9.279251251598156
+
+======================================================================
+Starting experiment: seed=3, iterations=0
+Running time of planning + optimization: 23.066604 secs
+Solved: True
+Task: Relocation
+Seed: 3
+Optimization iterations: 0
+Runtime (s): 23.066603899002075
+Initial controls: 9
+Optimized controls: 9
+Initial cost: 8.690236584973034
+Optimized cost: 8.690236584973034
+Cost improvement (%): 0.0
+
+======================================================================
+Starting experiment: seed=3, iterations=100
+Running time of planning + optimization: 77.595417 secs
+Solved: True
+Task: Relocation
+Seed: 3
+Optimization iterations: 100
+Runtime (s): 77.59541726112366
+Initial controls: 8
+Optimized controls: 7
+Initial cost: 9.796340948015343
+Optimized cost: 9.083887144939823
+Cost improvement (%): 7.272652175502914
+
+======================================================================
+Starting experiment: seed=3, iterations=300
+Running time of planning + optimization: 145.219028 secs
+Solved: True
+Task: Relocation
+Seed: 3
+Optimization iterations: 300
+Runtime (s): 145.21902799606323
+Initial controls: 9
+Optimized controls: 7
+Initial cost: 9.81200639240475
+Optimized cost: 6.1551677709969095
+Cost improvement (%): 37.26901996556501
+
+======================================================================
+Starting experiment: seed=4, iterations=0
+Running time of planning + optimization: 27.884615 secs
+Solved: True
+Task: Relocation
+Seed: 4
+Optimization iterations: 0
+Runtime (s): 27.884615182876587
+Initial controls: 7
+Optimized controls: 7
+Initial cost: 9.519459972887681
+Optimized cost: 9.519459972887681
+Cost improvement (%): 0.0
+
+======================================================================
+Starting experiment: seed=4, iterations=100
+Running time of planning + optimization: 40.764656 secs
+Solved: True
+Task: Relocation
+Seed: 4
+Optimization iterations: 100
+Runtime (s): 40.76465606689453
+Initial controls: 6
+Optimized controls: 6
+Initial cost: 7.205074997503654
+Optimized cost: 5.39748919992658
+Cost improvement (%): 25.087674981916894
+
+======================================================================
+Starting experiment: seed=4, iterations=300
+Running time of planning + optimization: 113.264384 secs
+Solved: True
+Task: Relocation
+Seed: 4
+Optimization iterations: 300
+Runtime (s): 113.2643837928772
+Initial controls: 6
+Optimized controls: 6
+Initial cost: 7.367249455196972
+Optimized cost: 6.500574783423714
+Cost improvement (%): 11.763883889690911
+
+======================================================================
+Starting experiment: seed=5, iterations=0
+Running time of planning + optimization: 24.595408 secs
+Solved: True
+Task: Relocation
+Seed: 5
+Optimization iterations: 0
+Runtime (s): 24.595407962799072
+Initial controls: 8
+Optimized controls: 8
+Initial cost: 7.218572319617579
+Optimized cost: 7.218572319617579
+Cost improvement (%): 0.0
+
+======================================================================
+Starting experiment: seed=5, iterations=100
+Running time of planning + optimization: 73.223123 secs
+Solved: True
+Task: Relocation
+Seed: 5
+Optimization iterations: 100
+Runtime (s): 73.2231228351593
+Initial controls: 8
+Optimized controls: 8
+Initial cost: 8.60636930533023
+Optimized cost: 7.603165299478121
+Cost improvement (%): 11.656529835766966
+
+======================================================================
+Starting experiment: seed=5, iterations=300
+Running time of planning + optimization: 150.307663 secs
+Solved: True
+Task: Relocation
+Seed: 5
+Optimization iterations: 300
+Runtime (s): 150.3076629638672
+Initial controls: 9
+Optimized controls: 8
+Initial cost: 8.913882304621904
+Optimized cost: 6.568215816208254
+Cost improvement (%): 26.31475723206943

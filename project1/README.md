@@ -16,3 +16,23 @@ pip install pybullet --upgrade
 ```
 
 Then, you can try to import the PyBullet module by ```import pybullet``` to check if the installation is successful.
+
+
+# 3. To avoid abundance of printed warnings
+```
+Intel MKL WARNING: Support of Intel(R) Streaming SIMD Extensions 4.2 (Intel(R) SSE4.2) enabled only processors has been deprecated. Intel oneAPI Math Kernel Library 2025.0 will require Intel(R) Advanced Vector Extensions (Intel(R) AVX) instructions.
+```
+If the following lines appear in the terminal when running the tasks, they can overpower the program output, 
+and make it unable to decipher where the printed results of the code are
+
+To run and evaluate each task, use the following corresponding terminal command
+```
+python -u main.py --task 1 2>&1 | awk '!/Intel MKL WARNING/ && !/Intel oneAPI Math Kernel Library 2025.0/'
+python -u main.py --task 2 2>&1 | awk '!/Intel MKL WARNING/ && !/Intel oneAPI Math Kernel Library 2025.0/'
+python -u main.py --task 3 2>&1 | awk '!/Intel MKL WARNING/ && !/Intel oneAPI Math Kernel Library 2025.0/'
+python -u main.py --task 4 2>&1 | awk '!/Intel MKL WARNING/ && !/Intel oneAPI Math Kernel Library 2025.0/'
+```
+
+# 4. Saved Output
+I saved the output of my Task 4 experiments in the task4_output.txt and ask4_relocation_results.csv files. 
+I copied any useful information from these files into my report, so the files themselves are basically just raw data.

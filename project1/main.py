@@ -116,10 +116,228 @@ if __name__ == "__main__":
         while True:
           pass
 
+
+
+
+
     # Task 4: Trajectory Optimization
     elif args.task == 4:
       ########## TODO ##########
-      pass
+      # Task 4
+      # Run to Evaluate: python main.py --task 4
 
-    
+      goal = RelocateGoal()
+      pdef.set_goal(goal)
+
+      # Best run from experiments for screenshots
+      seed = 3
+      num_iterations = 300
+      task_name = "Relocation"
+
+      print("\n" + "=" * 70)
+      print(f"Starting Task 4 visualization run: seed={seed}, iterations={num_iterations}")
+
+      # Camera angle for screenshots
+      pgui.resetDebugVisualizerCamera(
+        cameraDistance=0.9,
+        cameraYaw=120,
+        cameraPitch=-45,
+        cameraTargetPosition=[-0.1, -0.1, 0.0]
+      )
+
+      # Rebuild planner
+      planner = rrt.KinodynamicRRT(pdef)
+
+      # Reset to start state
+      panda_sim.restore_state(pdef.get_start_state())
+      for _ in range(2):
+        panda_sim.step()
+
+      time_st = time.time()
+      solved, plan, opt_plan, stats = opt.plan_and_optimize(
+        pdef,
+        planner,
+        time_budget=120.0,
+        num_iterations=num_iterations,
+        seed=seed,
+        verbose=False,
+      )
+      runtime = time.time() - time_st
+
+      print("Running time of planning + optimization: %f secs" % runtime)
+      print("Solved:", solved)
+      print("Task:", task_name)
+      print("Seed:", seed)
+      print("Optimization iterations:", num_iterations)
+      print("Runtime (s):", runtime)
+
+      if solved:
+        initial_controls = stats["initial_num_controls"]
+        optimized_controls = stats["optimized_num_controls"]
+        initial_cost = stats["initial_cost"]
+        optimized_cost = stats["optimized_cost"]
+
+        if initial_cost != 0:
+          improvement = 100.0 * (initial_cost - optimized_cost) / initial_cost
+        else:
+          improvement = 0.0
+
+        print("Initial controls:", initial_controls)
+        print("Optimized controls:", optimized_controls)
+        print("Initial cost:", initial_cost)
+        print("Optimized cost:", optimized_cost)
+        print("Cost improvement (%):", improvement)
+
+        # ------------------------------------------------------------
+        # SHOW INITIAL TRAJECTORY FIRST
+        # ------------------------------------------------------------
+        print("\nShowing INITIAL trajectory...")
+        panda_sim.restore_state(pdef.get_start_state())
+        for _ in range(2):
+          panda_sim.step()
+        panda_sim.restore_state(pdef.get_start_state())
+        utils.execute_plan(panda_sim, plan)
+
+        print("Initial trajectory finished. Take screenshot now if needed.")
+        time.sleep(20.0)
+
+        # ------------------------------------------------------------
+        # RESET AND SHOW OPTIMIZED TRAJECTORY
+        # ------------------------------------------------------------
+        print("\nShowing OPTIMIZED trajectory...")
+        panda_sim.restore_state(pdef.get_start_state())
+        for _ in range(2):
+          panda_sim.step()
+        panda_sim.restore_state(pdef.get_start_state())
+        utils.execute_plan(panda_sim, opt_plan)
+
+        print("Optimized trajectory finished. Leave window open for screenshot.")
+        while True:
+          pass
+
+      else:
+        print("No solution found.")
       ##########################
+
+
+
+'''    
+    #CODE USED TO PRODUCE OUTPUTS IN FILES
+    # Task 4: Trajectory Optimization
+    elif args.task == 4:
+      ########## TODO ##########
+      # Task 4
+      # Run to Evaluate: python main.py --task 4
+
+      #Loop for Producing Experiment Results:
+      # Choose task
+      goal = RelocateGoal()
+      # goal = GraspGoal()
+      pdef.set_goal(goal)
+
+      seeds = [0, 1, 2, 3, 4, 5]
+      iteration_list = [0, 100, 300]
+
+      task_name = "Relocation" if isinstance(goal, RelocateGoal) else "Grasping"
+      csv_path = f"task4_{task_name.lower()}_results.csv"
+
+      # Create CSV with header if it does not already exist
+      file_exists = os.path.exists(csv_path)
+      with open(csv_path, "a", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+
+        if not file_exists:
+          writer.writerow([
+            "task",
+            "seed",
+            "iterations",
+            "solved",
+            "runtime_s",
+            "initial_controls",
+            "optimized_controls",
+            "initial_cost",
+            "optimized_cost",
+            "cost_improvement_percent"
+          ])
+
+        for seed in seeds:
+          for num_iterations in iteration_list:
+            print("\n" + "=" * 70)
+            print(f"Starting experiment: seed={seed}, iterations={num_iterations}")
+
+            # Rebuild planner each run
+            planner = rrt.KinodynamicRRT(pdef)
+
+            # Reset to the same start state before each run
+            panda_sim.restore_state(pdef.get_start_state())
+            for _ in range(2):
+              panda_sim.step()
+
+            time_st = time.time()
+            solved, plan, opt_plan, stats = opt.plan_and_optimize(
+              pdef,
+              planner,
+              time_budget=120.0,
+              num_iterations=num_iterations,
+              seed=seed,
+              verbose=False,
+            )
+            runtime = time.time() - time_st
+
+            print("Running time of planning + optimization: %f secs" % runtime)
+            print("Solved:", solved)
+            print("Task:", task_name)
+            print("Seed:", seed)
+            print("Optimization iterations:", num_iterations)
+            print("Runtime (s):", runtime)
+
+            if solved:
+              initial_controls = stats["initial_num_controls"]
+              optimized_controls = stats["optimized_num_controls"]
+              initial_cost = stats["initial_cost"]
+              optimized_cost = stats["optimized_cost"]
+
+              if initial_cost != 0:
+                improvement = 100.0 * (initial_cost - optimized_cost) / initial_cost
+              else:
+                improvement = 0.0
+
+              print("Initial controls:", initial_controls)
+              print("Optimized controls:", optimized_controls)
+              print("Initial cost:", initial_cost)
+              print("Optimized cost:", optimized_cost)
+              print("Cost improvement (%):", improvement)
+
+              writer.writerow([
+                task_name,
+                seed,
+                num_iterations,
+                True,
+                runtime,
+                initial_controls,
+                optimized_controls,
+                initial_cost,
+                optimized_cost,
+                improvement
+              ])
+            else:
+              print("Planner failed for this experiment.")
+
+              writer.writerow([
+                task_name,
+                seed,
+                num_iterations,
+                False,
+                runtime,
+                "",
+                "",
+                "",
+                "",
+                ""
+              ])
+
+      print("\nSaved results to:", csv_path)
+
+      ####################
+
+'''

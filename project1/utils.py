@@ -13,14 +13,15 @@ def setup_bullet_client(connection_mode):
   bullet_client.setTimeStep(sim.SimTimeStep)
   bullet_client.setPhysicsEngineParameter(deterministicOverlappingPairs=1) # determinism guaranteed, important
 
-
+  '''
   #DO NOT SUBMIT WITH THIS CODE - TESTING ONLY
   bullet_client.resetDebugVisualizerCamera(
-    cameraDistance=0.9,
-    cameraYaw=45,
-    cameraPitch=-35,
-    cameraTargetPosition=[0.0, 0.0, 0.0]
+    cameraDistance=0.85,
+    cameraYaw=120,
+    cameraPitch=-45,
+    cameraTargetPosition=[-0.1, -0.1, 0.0]
   )
+  '''
 
   return bullet_client
 
