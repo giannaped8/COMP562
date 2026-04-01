@@ -23,10 +23,39 @@ def primitive_wrenches(mesh, grasp, mu=0.2, n_edges=8):
     """
     ########## TODO ##########
     W = np.zeros(shape=(len(grasp) * n_edges, 6))
-    
+
+    contacts = utils.get_centroid_of_triangles(mesh, grasp)
+    cm = mesh.center_mass
+
+    for j, tr_id in enumerate(grasp):
+        n = mesh.face_normals[tr_id]
+        n = n / np.linalg.norm(n)
+
+        ref = np.array([1.0, 0.0, 0.0]) if abs(n[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+        t1 = np.cross(n, ref)
+        t1 = t1 / np.linalg.norm(t1)
+        t2 = np.cross(n, t1)
+        t2 = t2 / np.linalg.norm(t2)
+
+        r = contacts[j] - cm
+
+        for k in range(n_edges):
+            theta = 2 * np.pi * k / n_edges
+            tangent = np.cos(theta) * t1 + np.sin(theta) * t2
+            f = n + mu * tangent
+            tau = np.cross(r, f)
+
+            row = j * n_edges + k
+            W[row, :3] = f
+            W[row, 3:] = tau
 
     ##########################
     return W
+
+
+
+
+
 
 
 ########## Task 2: Grasp Quality Evaluation ##########
@@ -45,10 +74,28 @@ def eval_Q(mesh, grasp, mu=0.2, n_edges=8, lmbd=1.0):
             lmbd: The scale of torque magnitude.
                   (default: 1.0)
     returns:   Q: The L1 quality score of the given grasp.
+
+
+    TESTING
+    python main.py --task 2 --mesh bunny
+    python main.py --task 2 --mesh cow
+    python main.py --task 2 --mesh duck
     """
     ########## TODO ##########
     Q = -np.inf
+    W = primitive_wrenches(mesh, grasp, mu=mu, n_edges=n_edges)
+    W_scaled = W.copy()
+    W_scaled[:, 3:] *= lmbd
 
+    hull = scipy.spatial.ConvexHull(W_scaled)
+
+    distances = []
+    for eq in hull.equations:
+        a = eq[:-1]
+        b = eq[-1]
+        distances.append(-b / np.linalg.norm(a))
+
+    Q = np.min(distances)
 
     ##########################
     return Q
