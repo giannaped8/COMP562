@@ -95,6 +95,10 @@ def eval_Q(mesh, grasp, mu=0.2, n_edges=8, lmbd=1.0):
     #   lmbd = [0.2, 0.5, 1]
     #   print("The value of lamba is: ", lmbd)
 
+    #for counting values in Task 4
+    if not hasattr(eval_Q, "counter"):
+        eval_Q.counter = 0
+    eval_Q.counter += 1
 
     Q = -np.inf
 
@@ -148,7 +152,7 @@ def sample_stable_grasp(mesh, thresh=0.0):
     """
     ########## TODO ##########
     # TESTING:          python main.py --task 3
-    # thresh=0.01, in main.py, lmbd=1.0 in eval_Q() default
+    # thresh=0.01, in main.py & lmbd=1.0 in eval_Q() default
     grasp = None
     Q = -np.inf
 
@@ -189,15 +193,20 @@ def find_neighbors(mesh, tr_id, eta=1):
     """
     ########## TODO ##########
     # TESTING:          python main.py --task 4
-    #nbr_ids = []
+    # grasp = [80, 165, 444] in main.py & lmbd=1.0 in eval_Q() default
+
+    # Build a graph where neighboring faces share a vertex.
+    nbr_ids = []
     adjacency = {}
     for a, b in mesh.face_neighborhood:
         adjacency.setdefault(a, set()).add(b)
         adjacency.setdefault(b, set()).add(a)
 
+    # Start the search from the query triangle.
     visited = {tr_id}
     frontier = {tr_id}
 
+    # Expand outward eta times to collect all neighbors within eta hops.
     for _ in range(eta):
         next_frontier = set()
         for f in frontier:
@@ -206,10 +215,13 @@ def find_neighbors(mesh, tr_id, eta=1):
         visited |= next_frontier
         frontier = next_frontier
 
+    # Remove the query triangle itself and return only its neighbors.
     visited.remove(tr_id)
-    return list(visited)
+    nbr_ids = list(visited)
+
     ##########################
-    #return nbr_ids
+    return nbr_ids
+
 
 def local_optimal(mesh, grasp):
     """
@@ -223,21 +235,27 @@ def local_optimal(mesh, grasp):
              Q_max: The L1 quality score of G_opt.
     """
     ########## TODO ##########
-    #G_opt = None
-    #Q_max = -np.inf
+    G_opt = None
+    Q_max = -np.inf
 
     candidate_lists = []
     for tr_id in grasp:
+        # For each contact, allow either staying on the same face or moving to a neighbor.
         nbrs = find_neighbors(mesh, tr_id, eta=1)
         candidate_lists.append([tr_id] + nbrs)
 
+    # Start with the current grasp as the best known candidate.
     G_opt = list(grasp)
     Q_max = eval_Q(mesh, G_opt)
 
+    # Check every combination of neighboring faces as a candidate neighbor grasp.
     for cand in it.product(*candidate_lists):
         cand = list(cand)
+
+        # Skip grasps that reuse the same triangle for multiple contacts.
         if len(set(cand)) < len(cand):
             continue
+
         Q = eval_Q(mesh, cand)
         if Q > Q_max:
             G_opt = cand
@@ -255,13 +273,15 @@ def optimize_grasp(mesh, grasp):
                    Type: list of int
     returns: traj: The trajectory of the grasp optimization.
                    Type: list of grasp (each grasp is a list of int)
-    """
-    traj = []
-    ########## TODO ##########
-    traj = [grasp]
-    current = grasp
+
+
+
+    # Initialize the trajectory with the starting grasp.
+    traj = [list(grasp)]
+    current = list(grasp)
     current_Q = eval_Q(mesh, current)
 
+    # Repeatedly move to the best neighboring grasp until no improvement is possible.
     while True:
         G_opt, Q_opt = local_optimal(mesh, current)
         if Q_opt > current_Q:
@@ -271,8 +291,58 @@ def optimize_grasp(mesh, grasp):
         else:
             break
 
+    """
+    traj = []
+    ########## TODO ##########
+    # Reset the quality-evaluation counter for this optimization run.
+    eval_Q.counter = 0
+
+    traj = [list(grasp)]
+    current = list(grasp)
+    current_Q = eval_Q(mesh, current)
+
+    while True:
+        G_opt, Q_opt = local_optimal(mesh, current)
+        if Q_opt > current_Q:
+            current = list(G_opt)
+            current_Q = Q_opt
+            traj.append(list(current))
+        else:
+            break
+
+    # Save the number of eval_Q calls used only for optimization.
+    eval_count = eval_Q.counter
+
+    # Estimate the probability of getting a grasp at least this good by random sampling.
+    n_trials = 5000
+    hits = 0
+    for _ in range(n_trials):
+        rand_grasp = np.random.choice(len(mesh.faces), size=3, replace=False).tolist()
+        rand_Q = eval_Q(mesh, rand_grasp)
+        if rand_Q >= current_Q:
+            hits += 1
+
+    prob = hits / n_trials
+
+    print("Number of grasp quality evaluations:", eval_count)
+    print(f"Estimated probability of randomly obtaining optimized quality: {prob:.6f} ({hits}/{n_trials})")
+
     ##########################
     return traj
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ########## Task 5: Grasp Optimization with Reachability ##########
