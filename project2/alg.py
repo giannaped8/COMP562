@@ -245,7 +245,50 @@ def optimize_reachable_grasp(mesh, r=0.5):
     """
     traj = []
     ########## TODO ##########
-   
+    #TESTING:       python main.py --task 5
+
+    def is_reachable(grasp):
+        points = utils.get_centroid_of_triangles(mesh, grasp)
+        psi = np.mean(points, axis=0)
+        avg_dist = np.mean(np.linalg.norm(points - psi, axis=1))
+        return avg_dist < r
+
+    while True:
+        grasp = np.random.choice(len(mesh.faces), size=3, replace=False).tolist()
+        if is_reachable(grasp):
+            break
+
+    current = list(grasp)
+    current_Q = eval_Q(mesh, current)
+    traj = [list(current)]
+
+    while True:
+        candidate_lists = []
+        for tr_id in current:
+            nbrs = find_neighbors(mesh, tr_id, eta=1)
+            candidate_lists.append([tr_id] + nbrs)
+
+        best_grasp = list(current)
+        best_Q = current_Q
+
+        for cand in it.product(*candidate_lists):
+            cand = list(cand)
+            if len(set(cand)) < len(cand):
+                continue
+            if not is_reachable(cand):
+                continue
+
+            Q = eval_Q(mesh, cand)
+            if Q > best_Q:
+                best_grasp = cand
+                best_Q = Q
+
+        if best_Q > current_Q:
+            current = best_grasp
+            current_Q = best_Q
+            traj.append(list(current))
+        else:
+            break
 
     ##########################
     return traj
