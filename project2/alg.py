@@ -116,9 +116,15 @@ def sample_stable_grasp(mesh, thresh=0.0):
                     expected to be larger than thresh.
     """
     ########## TODO ##########
+    # TESTING:          python main.py --task 3
     grasp = None
     Q = -np.inf
 
+    while True:
+        grasp = np.random.choice(len(mesh.faces), size=3, replace=False).tolist()
+        Q = eval_Q(mesh, grasp)
+        if Q > thresh:
+            return grasp, Q
 
     ##########################
     return grasp, Q
@@ -139,12 +145,28 @@ def find_neighbors(mesh, tr_id, eta=1):
                       Type: list of int
     """
     ########## TODO ##########
-    nbr_ids = []
+    # TESTING:          python main.py --task 4
+    #nbr_ids = []
+    adjacency = {}
+    for a, b in mesh.face_neighborhood:
+        adjacency.setdefault(a, set()).add(b)
+        adjacency.setdefault(b, set()).add(a)
 
+    visited = {tr_id}
+    frontier = {tr_id}
 
+    for _ in range(eta):
+        next_frontier = set()
+        for f in frontier:
+            next_frontier |= adjacency.get(f, set())
+        next_frontier -= visited
+        visited |= next_frontier
+        frontier = next_frontier
 
+    visited.remove(tr_id)
+    return list(visited)
     ##########################
-    return nbr_ids
+    #return nbr_ids
 
 def local_optimal(mesh, grasp):
     """
@@ -158,9 +180,25 @@ def local_optimal(mesh, grasp):
              Q_max: The L1 quality score of G_opt.
     """
     ########## TODO ##########
-    G_opt = None
-    Q_max = -np.inf
+    #G_opt = None
+    #Q_max = -np.inf
 
+    candidate_lists = []
+    for tr_id in grasp:
+        nbrs = find_neighbors(mesh, tr_id, eta=1)
+        candidate_lists.append([tr_id] + nbrs)
+
+    G_opt = list(grasp)
+    Q_max = eval_Q(mesh, G_opt)
+
+    for cand in it.product(*candidate_lists):
+        cand = list(cand)
+        if len(set(cand)) < len(cand):
+            continue
+        Q = eval_Q(mesh, cand)
+        if Q > Q_max:
+            G_opt = cand
+            Q_max = Q
 
     ##########################
     return G_opt, Q_max
@@ -177,7 +215,18 @@ def optimize_grasp(mesh, grasp):
     """
     traj = []
     ########## TODO ##########
-   
+    traj = [grasp]
+    current = grasp
+    current_Q = eval_Q(mesh, current)
+
+    while True:
+        G_opt, Q_opt = local_optimal(mesh, current)
+        if Q_opt > current_Q:
+            current = G_opt
+            current_Q = Q_opt
+            traj.append(current)
+        else:
+            break
 
     ##########################
     return traj
