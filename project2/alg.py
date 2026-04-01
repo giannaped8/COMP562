@@ -22,27 +22,37 @@ def primitive_wrenches(mesh, grasp, mu=0.2, n_edges=8):
                   Type: numpy.ndarray of shape (len(grasp) * n_edges, 6)
     """
     ########## TODO ##########
+    # TESTING:      python main.py --task 1
     W = np.zeros(shape=(len(grasp) * n_edges, 6))
 
+    # Use triangle centroids as contact points and measure torque about the center of mass.
     contacts = utils.get_centroid_of_triangles(mesh, grasp)
     cm = mesh.center_mass
 
     for j, tr_id in enumerate(grasp):
+        # Outward unit normal of the contacted face.
         n = mesh.face_normals[tr_id]
         n = n / np.linalg.norm(n)
 
+        # Build an orthonormal basis for the tangent plane at the contact.
         ref = np.array([1.0, 0.0, 0.0]) if abs(n[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
         t1 = np.cross(n, ref)
         t1 = t1 / np.linalg.norm(t1)
         t2 = np.cross(n, t1)
         t2 = t2 / np.linalg.norm(t2)
 
+        # Lever arm from the object center of mass to the contact point.
         r = contacts[j] - cm
 
         for k in range(n_edges):
+            # Sample one edge of the polyhedral friction cone in the tangent plane.
             theta = 2 * np.pi * k / n_edges
             tangent = np.cos(theta) * t1 + np.sin(theta) * t2
+
+            # Primitive force has unit normal component and tangential magnitude mu.
             f = n + mu * tangent
+
+            # Wrench torque is induced by the force acting at the contact point.
             tau = np.cross(r, f)
 
             row = j * n_edges + k
@@ -74,31 +84,52 @@ def eval_Q(mesh, grasp, mu=0.2, n_edges=8, lmbd=1.0):
             lmbd: The scale of torque magnitude.
                   (default: 1.0)
     returns:   Q: The L1 quality score of the given grasp.
-
-
-    TESTING
-    python main.py --task 2 --mesh bunny
-    python main.py --task 2 --mesh cow
-    python main.py --task 2 --mesh duck
     """
     ########## TODO ##########
+    #   TESTING:
+    #           python main.py --task 2 --mesh bunny
+    #           python main.py --task 2 --mesh cow
+    #           python main.py --task 2 --mesh duck
+
+    #   EXPERIMENTS: (L1 = grasp quality)
+    #   lmbd = [0.2, 0.5, 1]
+    #   print("The value of lamba is: ", lmbd)
+
+
     Q = -np.inf
+
+    # First compute all primitive wrenches for the grasp.
     W = primitive_wrenches(mesh, grasp, mu=mu, n_edges=n_edges)
+
+    # Scale the torque part of each wrench by lambda before building the hull.
     W_scaled = W.copy()
     W_scaled[:, 3:] *= lmbd
 
+    # The convex hull of the primitive wrenches defines the feasible wrench space.
     hull = scipy.spatial.ConvexHull(W_scaled)
 
     distances = []
     for eq in hull.equations:
+        # Each hyperplane is stored as a · x + b = 0.
         a = eq[:-1]
         b = eq[-1]
+
+        # Signed distance from the origin to this hyperplane is -b / ||a||.
         distances.append(-b / np.linalg.norm(a))
 
+    # L1 grasp quality is the minimum signed distance over all hull facets.
     Q = np.min(distances)
 
     ##########################
     return Q
+
+
+
+
+
+
+
+
 
 
 ########## Task 3: Stable Grasp Sampling ##########
@@ -117,17 +148,29 @@ def sample_stable_grasp(mesh, thresh=0.0):
     """
     ########## TODO ##########
     # TESTING:          python main.py --task 3
+    # thresh=0.01, in main.py, lmbd=1.0 in eval_Q() default
     grasp = None
     Q = -np.inf
 
     while True:
+        # Randomly sample a 3-contact grasp using distinct triangle indices.
         grasp = np.random.choice(len(mesh.faces), size=3, replace=False).tolist()
+
+        # Evaluate the sampled grasp using the L1 quality from Task 2.
         Q = eval_Q(mesh, grasp)
+
+        # Stop once the sampled grasp is stable enough.
         if Q > thresh:
             return grasp, Q
 
     ##########################
     return grasp, Q
+
+
+
+
+
+
 
 
 ########## Task 4: Grasp Optimization ##########
