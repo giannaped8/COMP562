@@ -274,23 +274,6 @@ def optimize_grasp(mesh, grasp):
     returns: traj: The trajectory of the grasp optimization.
                    Type: list of grasp (each grasp is a list of int)
 
-
-
-    # Initialize the trajectory with the starting grasp.
-    traj = [list(grasp)]
-    current = list(grasp)
-    current_Q = eval_Q(mesh, current)
-
-    # Repeatedly move to the best neighboring grasp until no improvement is possible.
-    while True:
-        G_opt, Q_opt = local_optimal(mesh, current)
-        if Q_opt > current_Q:
-            current = G_opt
-            current_Q = Q_opt
-            traj.append(current)
-        else:
-            break
-
     """
     traj = []
     ########## TODO ##########
@@ -359,25 +342,31 @@ def optimize_reachable_grasp(mesh, r=0.5):
     traj = []
     ########## TODO ##########
     #TESTING:       python main.py --task 5
-
     def is_reachable(grasp):
+        # Compute the contact points and their centroid.
         points = utils.get_centroid_of_triangles(mesh, grasp)
         psi = np.mean(points, axis=0)
+
+        # A grasp is reachable if the average distance to the centroid is below r.
         avg_dist = np.mean(np.linalg.norm(points - psi, axis=1))
         return avg_dist < r
 
+    # Randomly sample an initial grasp until it satisfies the reachability constraint.
     while True:
         grasp = np.random.choice(len(mesh.faces), size=3, replace=False).tolist()
         if is_reachable(grasp):
             break
 
+    # Initialize the optimization from the sampled reachable grasp.
     current = list(grasp)
     current_Q = eval_Q(mesh, current)
     traj = [list(current)]
 
+    # Repeatedly search for the best reachable neighboring grasp.
     while True:
         candidate_lists = []
         for tr_id in current:
+            # Each contact may stay where it is or move to one of its neighbors.
             nbrs = find_neighbors(mesh, tr_id, eta=1)
             candidate_lists.append([tr_id] + nbrs)
 
@@ -386,8 +375,12 @@ def optimize_reachable_grasp(mesh, r=0.5):
 
         for cand in it.product(*candidate_lists):
             cand = list(cand)
+
+            # Skip grasps that reuse the same triangle for multiple contacts.
             if len(set(cand)) < len(cand):
                 continue
+
+            # Only consider neighbor grasps that satisfy the reachability constraint.
             if not is_reachable(cand):
                 continue
 
@@ -396,12 +389,12 @@ def optimize_reachable_grasp(mesh, r=0.5):
                 best_grasp = cand
                 best_Q = Q
 
+        # Move to the best reachable neighbor only if it improves the quality.
         if best_Q > current_Q:
             current = best_grasp
             current_Q = best_Q
             traj.append(list(current))
         else:
             break
-
     ##########################
     return traj

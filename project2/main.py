@@ -65,9 +65,50 @@ if __name__ == "__main__":
         print("The quality of the optimized grasp: %f" % alg.eval_Q(mesh, traj[-1]))
         utils.plot_traj(mesh, traj)
 
+
     # Task 5: Sample and Optimize a Grasp under Reachability Constraint
+    # TESTING:       python main.py --task 5
     elif args.task == 5:
-        traj = alg.optimize_reachable_grasp(mesh, r=1.0)
-        print("The quality of the given initial grasp: %f" % alg.eval_Q(mesh, traj[0]))
-        print("The quality of the optimized grasp: %f" % alg.eval_Q(mesh, traj[-1]))
-        utils.plot_traj(mesh, traj)
+        ##########################
+        #traj = alg.optimize_reachable_grasp(mesh, r=1.0)
+        #print("The quality of the given initial grasp: %f" % alg.eval_Q(mesh, traj[0]))
+        #print("The quality of the optimized grasp: %f" % alg.eval_Q(mesh, traj[-1]))
+        #utils.plot_traj(mesh, traj)
+        ##########################
+
+        # Test the reachability-constrained optimizer for both required r values.
+        r_vals = [0.5, 1]
+        for r_val in r_vals:
+            print(f"Reachability Measure: r = {r_val}")
+
+            # Track the best optimized trajectory among several random trials.
+            Q_max = -np.inf
+            best_traj = []
+
+            for i in range(5):
+                traj = alg.optimize_reachable_grasp(mesh, r=r_val)
+
+                # Evaluate the final grasp in this trajectory.
+                Q_opt = alg.eval_Q(mesh, traj[-1])
+                grasp_opt = [int(x) for x in traj[-1]]
+
+                # Keep the trajectory with the highest final quality.
+                if Q_opt > Q_max:
+                    Q_max = Q_opt
+                    best_traj = traj
+
+                # Print the sampled initial grasp and the optimized result for this trial.
+                print(f"Trial {i + 1}")
+                print("  Initial grasp:", traj[0])
+                print("  Initial Q:", alg.eval_Q(mesh, traj[0]))
+                print("  Optimized grasp:", grasp_opt)
+                print("  Optimized Q:", Q_opt)
+                print("  Trajectory length:", len(traj))
+                print()
+
+            # Report and visualize the best trajectory found for this reachability value.
+            print("The maximum optimized grasp quality : %f" % Q_max)
+            utils.plot_traj(mesh, best_traj)
+        ##########################
+
+
