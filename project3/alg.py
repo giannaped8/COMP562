@@ -14,7 +14,7 @@ FK_Solver = utils.FKSolver() # forward kinematics solver
 
 
 ########## Task 1: Particle Weights Calculation ##########
-
+# TESTING:  python main.py --task 1
 def dist_to_closest_obs(x, y):
     """
     Find the distance between the stick's sphere end centered at (x, y) 
@@ -25,8 +25,9 @@ def dist_to_closest_obs(x, y):
     """
     ########## TODO ##########
     dist = 0.0
-
-
+    obs_dists = np.sqrt((OBS_CENTER[:, 0] - x) ** 2 + (OBS_CENTER[:, 1] - y) ** 2)
+    surface_dists = obs_dists - (OBS_RADIUS + SPH_RADIUS)
+    dist = surface_dists[np.argmin(np.abs(surface_dists))]
     ##########################
     return dist
 
@@ -43,9 +44,21 @@ def cal_weights(particles, obv, sigma=0.05):
                       Type: numpy.ndarray of shape (# of particles,)
     """
     ########## TODO ##########
+    # sigma = 0.5
+    # print("sigma: ", sigma)
+
     weights = None
+    tip_x_local, tip_y_local = FK_Solver.forward_kinematics_2d(obv)
 
+    dists = []
+    for px, py, theta in particles:
+        tip_x_world = px + np.cos(theta) * tip_x_local - np.sin(theta) * tip_y_local
+        tip_y_world = py + np.sin(theta) * tip_x_local + np.cos(theta) * tip_y_local
+        dists.append(dist_to_closest_obs(tip_x_world, tip_y_world))
 
+    dists = np.array(dists)
+    likelihoods = scipy.stats.norm(loc=0, scale=sigma).pdf(dists)
+    weights = likelihoods / np.sum(likelihoods)
     ##########################
     return weights
 
@@ -61,10 +74,25 @@ def most_likely_particle(particles, obv):
     """
     ########## TODO ##########
     idx = 0
-
-
+    weights = cal_weights(particles, obv)
+    idx = np.argmax(weights)
     ##########################
     return idx
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ########## Task 2: Particle Filter ##########
