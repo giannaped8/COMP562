@@ -283,7 +283,9 @@ def get_one_obv(panda_sim):
     obv = np.array(jpos[:7])
 
     ##########################
+    #raise RuntimeError("get_one_obv failed to find a touch observation")
     return obv
+
 
 
 
@@ -333,6 +335,7 @@ def particle_filter_online(panda_sim, num_particles, sigma=0.05, delta=0.01, plo
         # Move the robot until the spherical probe touches an obstacle.
         # The returned observation is the 7D joint configuration at contact.
         obv = get_one_obv(panda_sim)
+        print("Touch:", panda_sim.is_touch(), "Observation:", obv)
 
         # Update particle weights using the newly collected observation.
         weights = cal_weights(particles, obv, sigma=sigma)
