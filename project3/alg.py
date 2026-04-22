@@ -44,8 +44,6 @@ def cal_weights(particles, obv, sigma=0.05):
                       Type: numpy.ndarray of shape (# of particles,)
     """
     ########## TODO ##########
-    #sigma = 0.5    #[0.05, 0.1, 0.5]
-    #print("Sigma = ", sigma)
 
     # Use forward kinematics to find the spherical end position in the robot base frame.
     tip_x_local, tip_y_local = FK_Solver.forward_kinematics_2d(obv)
