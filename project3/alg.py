@@ -31,7 +31,6 @@ def dist_to_closest_obs(x, y):
     ##########################
     return dist
 
-
 def cal_weights(particles, obv, sigma=0.05):
     """
     Calculate the weights for particles based on the given observation.
@@ -85,8 +84,6 @@ def cal_weights(particles, obv, sigma=0.05):
     ##########################
     return weights
 
-
-
 def most_likely_particle(particles, obv):
     """
     Find the most likely particle.
@@ -103,9 +100,6 @@ def most_likely_particle(particles, obv):
     idx = np.argmax(weights)
     ##########################
     return idx
-
-
-
 
 
 
@@ -196,13 +190,6 @@ def particle_filter(panda_sim, obvs, num_particles, sigma=0.05, delta=0.01, plot
 
 
 
-
-
-
-
-
-
-
 ########## Task 3: Generate Observations Online ##########
 #   TESTING:  python main.py --task 3
 def get_one_obv(panda_sim):
@@ -214,87 +201,94 @@ def get_one_obv(panda_sim):
                      Type: numpy.ndarray of shape (7,)
     """
     ########## TODO ##########
-    # We collect an online observation by randomly moving the robot's end-effector
-    # until the spherical end of the stick touches one of the cylinder obstacles.
-    #
-    # The observation is the robot's 7 joint angles at the moment of touch.
+
+    # ---------------------------------------------------------------------------
+    # Pre-defined arm configurations for diverse workspace coverage.
+    # Each row is a set of 7 joint angles. Cycling through these puts the sphere
+    # at different heights and horizontal positions in the robot's LOCAL frame,
+    # which constrains all three pose dimensions (x, y, theta) in the filter.
+    # ---------------------------------------------------------------------------
+    _PROBE_CONFIGS = np.array([
+        [0.0, -0.785, 0.0, -2.356, 0.0, 1.571, 0.785],  # default: mid-height
+        [0.6, -0.785, 0.0, -2.356, 0.0, 1.571, 0.785],  # base rotated right
+        [-0.6, -0.785, 0.0, -2.356, 0.0, 1.571, 0.785],  # base rotated left
+        [0.0, -0.5, 0.0, -2.0, 0.0, 1.8, 0.785],  # arm extended / higher
+        [0.0, -1.0, 0.0, -2.6, 0.0, 1.3, 0.785],  # arm pulled in / lower
+        [1.0, -0.785, 0.0, -2.356, 0.0, 1.571, 0.785],  # far right rotation
+        [-1.0, -0.785, 0.0, -2.356, 0.0, 1.571, 0.785],  # far left rotation
+    ])
+
+    def safe_is_touch():
+        try:
+            return panda_sim.is_touch()
+        except TypeError:
+            return False
+
+    def safe_is_collision():
+        try:
+            return panda_sim.is_collision()
+        except TypeError:
+            return False
 
     obv = None
-    max_steps = 8000
-    segment_steps = 75
-    speed = 0.35
 
-    v = np.zeros(6)
+    max_attempts = 70  # = 10 full cycles through _PROBE_CONFIGS
+    steps_per_attempt = 350  # max simulation steps per probe direction
+    min_steps = 8  # ignore contacts for first N steps to flush stale cache
 
-    for step in range(max_steps):
+    # Remember the original configuration so we can restore it after every attempt.
+    # set_joint_values / resetJointState zeros velocity too — more reliable than
+    # save/restoreState in GUI mode, which can leave motor velocity targets active.
+    jpos_init, _, _ = panda_sim.get_joint_states()
+    start_joints = np.array(jpos_init[:7])
 
-        # Choose a new random Cartesian direction every few simulation steps.
-        #
-        # The first three entries of v are translational velocity.
-        # The last three entries are rotational velocity, which we keep at zero.
-        if step % segment_steps == 0:
-            direction = np.random.normal(size=3)
+    for attempt in range(max_attempts):
+        # ── 1. Pick an arm configuration ────────────────────────────────────
+        # Cycle through the pre-defined poses so we cover the full workspace.
+        probe_joints = _PROBE_CONFIGS[attempt % len(_PROBE_CONFIGS)]
+        panda_sim.set_joint_values(probe_joints)
+        # A few physics steps flush the contact cache after the teleport.
+        for _ in range(5):
+            panda_sim.step()
 
-            # Most useful motion for contacting vertical cylinders is in x-y.
-            # Keep z motion smaller so the probe does not wander too aggressively up/down.
-            direction[2] *= 0.25
+        # ── 2. Pick a random horizontal probe direction ──────────────────────
+        angle = np.random.uniform(0, 2 * np.pi)
+        speed = 0.25
+        v = np.array([np.cos(angle) * speed,
+                      np.sin(angle) * speed,
+                      0.0, 0.0, 0.0, 0.0])
 
-            direction_norm = np.linalg.norm(direction)
-            if direction_norm < 1e-8:
-                continue
+        # ── 3. Move until touch, arm collision, or step budget exhausted ─────
+        found = False
+        steps = 0
+        for _ in range(steps_per_attempt):
+            # Only record after min_steps to avoid residual contacts from reset
+            if safe_is_touch() and steps >= min_steps:              # DEBUGGING
+            #if panda_sim.is_touch() and steps >= min_steps:
+                jpos, _, _ = panda_sim.get_joint_states()
+                obv = np.array(jpos[:7])
+                found = True
+                break
+            # Arm (non-tip) collision → abort this direction
+            if safe_is_collision() and not safe_is_touch():          # DEBUGGING
+            #if panda_sim.is_collision() and not panda_sim.is_touch():
+                break
+            panda_sim.execute(v)
+            steps += 1
 
-            direction = direction / direction_norm
+        # ── 4. Reset to starting configuration ──────────────────────────────
+        panda_sim.set_joint_values(start_joints)
+        for _ in range(5):
+            panda_sim.step()
 
-            v = np.zeros(6)
-            v[0:3] = speed * direction
-
-        # Save the current joint configuration before moving.
-        #
-        # If the robot causes an invalid collision, we can roll back to this
-        # previous safe configuration.
-        prev_jpos, _, _ = panda_sim.get_joint_states()
-        prev_jpos = np.array(prev_jpos[:7])
-
-        # Move the robot one control step using the selected Cartesian velocity.
-        panda_sim.execute(v)
-
-        # If the spherical end of the stick touches an obstacle, this is a valid
-        # contact observation. Return the current 7 robot joint angles.
-        if panda_sim.is_touch():
-            jpos, _, _ = panda_sim.get_joint_states()
-            obv = np.array(jpos[:7])
+        if found:
             return obv
 
-        # If there is a collision but it is not a valid stick-sphere touch,
-        # undo the movement and pick a new direction.
-        if panda_sim.is_collision():
-            panda_sim.set_joint_values(prev_jpos)
-
-            # Force a new random direction on the next loop iteration.
-            segment_steps = 1
-
-        else:
-            # Restore the normal segment length after a safe move.
-            segment_steps = 75
-
-    # If no touch is found, return the current joint configuration as a fallback.
-    # In most runs this should not be reached, but it prevents returning None.
+    # Fallback: no touch found — return current joints to prevent None.
     jpos, _, _ = panda_sim.get_joint_states()
     obv = np.array(jpos[:7])
-
     ##########################
-    #raise RuntimeError("get_one_obv failed to find a touch observation")
     return obv
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -312,8 +306,10 @@ def particle_filter_online(panda_sim, num_particles, sigma=0.05, delta=0.01, plo
                    plot: Whether to enable particle plot (True or False).
     returns:        est: The estimate of the pose of the robot base. 
                          Type: numpy.ndarray of shape (3,)
+
+
     """
-    # # initialize the particles and weights 
+    # initialize the particles and weights
     particles = np.random.uniform(low=[-1, -1, -np.pi], high=[1, 1, np.pi], size=(num_particles, 3))
     weights = np.ones(shape=(num_particles,)) / num_particles
 
@@ -323,25 +319,17 @@ def particle_filter_online(panda_sim, num_particles, sigma=0.05, delta=0.01, plo
         utils.plot_pf(ax, particles, panda_sim.loc)
         plt.pause(0.01)
 
-    ########## TODO ##########
-    # Number of online contact observations to collect.
-    #
-    # Each iteration collects one new touch observation, updates particle weights,
-    # resamples particles, and perturbs them.
-
-    num_iters = 100  # The number of iterations. Feel free to change the value
+    num_iters = 100
     for _ in range(num_iters):
 
-        # Move the robot until the spherical probe touches an obstacle.
-        # The returned observation is the 7D joint configuration at contact.
+        ########## TODO ##########
         obv = get_one_obv(panda_sim)
-        print("Touch:", panda_sim.is_touch(), "Observation:", obv)
 
-        # Update particle weights using the newly collected observation.
+        # Update particle weights using the current contact observation.
         weights = cal_weights(particles, obv, sigma=sigma)
 
-        # Resample particles according to their normalized weights.
-        # Higher-weight particles are more likely to be selected multiple times.
+        # Resample particles according to their weights.
+        # Particles with larger weights are more likely to be copied.
         resampled_idxs = np.random.choice(
             num_particles,
             size=num_particles,
@@ -350,31 +338,28 @@ def particle_filter_online(panda_sim, num_particles, sigma=0.05, delta=0.01, plo
         )
         particles = particles[resampled_idxs]
 
-        # Add Gaussian perturbation after resampling.
-        #
-        # This prevents particle collapse, where all particles become identical
-        # after repeated resampling.
+        # Add Gaussian noise after resampling to prevent particle collapse.
         particles += np.random.normal(
             loc=0.0,
             scale=delta,
             size=particles.shape
         )
 
-        # Keep x and y inside the original state-space bounds.
+        # Keep x and y inside the original valid sampling range.
         particles[:, 0] = np.clip(particles[:, 0], -1, 1)
         particles[:, 1] = np.clip(particles[:, 1], -1, 1)
 
         # Wrap theta back into [-pi, pi].
         particles[:, 2] = (particles[:, 2] + np.pi) % (2 * np.pi) - np.pi
 
-        # Plot the particles in the visualization.
+        ##########################
+
+        # plot the particles in the visualization
         if plot:
             utils.plot_pf(ax, particles, panda_sim.loc)
             plt.pause(0.01)
 
-    ##########################
     est = particles.mean(0)
     return est
-
 
 
